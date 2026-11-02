@@ -1,0 +1,11 @@
+{
+  "name": "offpage-planner",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "node stamp.js && wrangler deploy",
+    "db:local": "wrangler d1 execute offpage-planner --local --file schema.sql",
+    "db:remote": "wrangler d1 execute offpage-planner --remote --file schema.sql"
+  },
+  "devDependencies": { "wrangler": "^4.0.0" }
+}

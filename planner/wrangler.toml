@@ -1,0 +1,22 @@
+name = "offpage-planner"
+main = "src/worker.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+# run the Worker next to the D1 database: several queries per request, so this cuts latency
+[placement]
+mode = "smart"
+
+[assets]
+directory = "public"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "offpage-planner"
+database_id = "REPLACE_AFTER_d1_create"
+
+# Secrets (npx wrangler secret put <NAME>):
+#   SETUP_CODE  one-time code that allows creating the first account (only while no account exists)
+#   API_TOKEN   bearer token for Claude / scripts (Authorization: Bearer <token>)

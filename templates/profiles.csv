@@ -1,0 +1,43 @@
+﻿#,Platform,Sign-up / home,Type,Value (1-5),What to post,Link to,Status
+1,YouTube,https://www.youtube.com,Video / entity,5,Channel + short tutorials (shadery / RAM / nie uruchamia się); link in description,matching guide,todo
+2,TikTok,https://www.tiktok.com,Video / entity,4,Short fixes (15-30 s) - bio link,{SITE}/,todo
+3,X (Twitter),https://x.com,Entity,3,Profile + post each new guide,{SITE}/,todo
+4,Pinterest,https://www.pinterest.com,Image,3,Pin article covers + step screenshots; each pin links to its guide,matching guide,todo
+5,Reddit (user profile),https://www.reddit.com,Entity / community,3,Profile link; build karma before any thread link,{SITE}/,todo
+6,Bluesky,https://bsky.app,Entity,2,Profile + post new guides,{SITE}/,todo
+7,Threads,https://www.threads.net,Entity,2,Profile (links to Instagram),{SITE}/,todo
+8,Mastodon (mastodon.social),https://mastodon.social,Entity,2,Profile with verified website link (rel=me),{SITE}/,todo
+9,Twitch,https://www.twitch.tv,Entity,2,Profile panel link,{SITE}/,todo
+10,Discord server,https://discord.com,Community,3,Help server; invite on site; no SEO link but brand + traffic,-,todo
+11,Wykop (profil),https://wykop.pl,Entity / PL community,3,PL sites only: profile + #{niche} posts,{SITE}/,todo
+12,GitHub,https://github.com,Entity / guide,4,"Org/profile + repo '{topic}-poradniki' (README FAQ, links to guides)",matching guides,todo
+13,GitHub Pages,https://pages.github.com,Guide,3,One-page FAQ mirror (short) linking to full guides,matching guides,todo
+14,DeviantArt,https://www.deviantart.com,Image,2,Niche images / screenshots with link in description,matching guide,todo
+15,Imgur,https://imgur.com,Image,1,Shader before/after screenshots (traffic only),shaders guide,todo
+16,Flickr,https://www.flickr.com,Image,2,Album of screenshots from guides with captions + link,matching guide,todo
+17,Medium,https://medium.com,Guide,3,"2-3 original short guides (EN), canonical-safe rewrite, link to full guide",matching guide,todo
+18,Substack,https://substack.com,Guide / newsletter,2,Newsletter: new guides monthly,matching guide,todo
+19,Blogger,https://www.blogger.com,Guide (web 2.0),2,"Real mini-blog, 5+ unique posts - not 1 thin post",matching guide,todo
+20,WordPress.com,https://wordpress.com,Guide (web 2.0),2,Same rule: unique posts only,matching guide,todo
+21,Tumblr,https://www.tumblr.com,Guide / image,2,Screenshots + short tips,matching guide,todo
+22,Google Sites,https://sites.google.com,Guide,2,One FAQ page,matching guide,todo
+23,Notion (public page),https://www.notion.so,Guide,2,Public checklist '{TOPIC} troubleshooting checklist',{SITE}/troubleshooting-guide,todo
+24,Scribd,https://www.scribd.com,PDF,2,PDF: '{TOPIC} - poradnik PDF' (your guide as PDF) with links,matching guide,todo
+25,Issuu,https://issuu.com,PDF,2,Same PDF,matching guide,todo
+26,Calameo,https://www.calameo.com,PDF,1,Same PDF,matching guide,todo
+27,SlideShare,https://www.slideshare.net,PDF / slides,2,Slides version of a guide,matching guide,todo
+28,Yumpu,https://www.yumpu.com,PDF,1,Same PDF,matching guide,todo
+29,Vimeo,https://vimeo.com,Video,2,Upload same tutorial videos,matching guide,todo
+30,Dailymotion,https://www.dailymotion.com,Video,2,Upload same tutorial videos,matching guide,todo
+31,Quora,https://www.quora.com,Q&A,3,Answer launcher questions; link when it truly answers,matching guide,todo
+32,Gaming Stack Exchange (Arqade),https://gaming.stackexchange.com,Q&A,2,Strict: real answers only; profile website,{SITE}/,todo
+33,Zapytaj Onet,https://zapytaj.onet.pl,Q&A PL,2,Answer questions,matching guide,todo
+34,AlternativeTo,https://alternativeto.net,Directory / community,3,Write an honest review/comment on {TOPIC} listing; profile link,{SITE}/,todo
+35,Product Hunt (profile),https://www.producthunt.com,Entity,1,Profile website only,{SITE}/,todo
+36,Gravatar,https://gravatar.com,Entity,2,Profile for the author email - powers author avatars + website link,{SITE}/author/redakcja,todo
+37,About.me,https://about.me,Entity,1,Brand profile,{SITE}/,todo
+38,Linktree,https://linktr.ee,Entity,1,One hub for socials (only one bio-link site - not many),{SITE}/,todo
+39,Spotify for Podcasters,https://creators.spotify.com,Audio,1,Only if you make real audio - skip otherwise,-,todo
+40,Telegram channel,https://telegram.org,Community,2,channel posting new guides,matching guide,todo
+41,Bing Places / Google Business,-,Company,0,Not applicable - no physical business; skip,-,todo
+42,Crunchbase / company directories,-,Company,0,Not applicable - site is not a company; fake company listings = spam footprint,-,todo

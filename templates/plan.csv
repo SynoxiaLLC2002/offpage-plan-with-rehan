@@ -1,0 +1,18 @@
+﻿Week,Area,Task,Target,Owner,Status
+0,Clean-up,Upload disavow.txt in Google Search Console (Disavow tool),1x,You,todo
+0,Clean-up,Verify site in Bing Webmaster Tools + import from GSC + submit sitemap,1x,You,todo
+0,Clean-up,Stop all comment / bio-link / mass-profile link building,ongoing,You,todo
+0,Brand,"Set the brand kit: name '{BRAND}', logo, 1 bio in 3 lengths (never 'official')",1x,You + Claude,todo
+1-4,Profiles,Create profiles from the 'profiles' tab - highest Value first,3-5 / week,You,todo
+1-4,Profiles,Add every live profile to the author page sameAs,after each,Claude,todo
+1+,Forums,Answer threads from 'forum-threads' (priority 1 first) - Claude writes replies,3-5 / week,You + Claude,todo
+1+,Forums,Run 10 searches from 'forum-queries' (past year filter); paste found threads into 'forum-threads',10 / week,You,todo
+1+,Video,"1 short tutorial video (YouTube + TikTok), link the matching guide in description",1 / week,You,todo
+2+,Content,"Publish 1 remaining draft per day, then IndexNow + internal links",1 / day,You + Claude,todo
+2+,Outreach,Email {NICHE} community owners / YouTubers offering a free guide or FAQ for their community,5 / week,You + Claude,todo
+2+,PBN,"If running PBNs: unique hosting/registrar/theme each, real content, brand/URL anchors only, max 2 / week, never interlinked",max 2 / week,You,todo
+4,Review,"Pull Search Console data: '{MAIN KEYWORD}' impressions, new referring domains, title test",1x,Claude,todo
+8,Review,Re-run backlink export; add any new spam to disavow,1x,You + Claude,todo
+Rule,Anchors,"Anchors: ~50% brand/URL, ~35% partial/topic ('guide to X'), ~15% generic ('here'); exact main keyword rarely",always,All,-
+Rule,Targets,"Link the specific guide that answers the question, not the homepage",always,All,-
+Rule,Quality,Only reply in live threads (past 12 months); never necropost; one link per reply max,always,All,-

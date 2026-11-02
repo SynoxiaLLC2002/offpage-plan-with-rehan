@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Offpage Planner</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232F5BEA'/><path d='M9 17l5 5 9-12' stroke='white' stroke-width='3.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+<link rel="stylesheet" href="/style.css?v=mvz7ul7u">
+</head>
+<body>
+  <section id="auth" hidden>
+    <form id="authForm" class="auth-card">
+      <div class="brand big"><span class="mark"></span><span>Offpage Planner</span></div>
+      <p id="authHint" class="muted">Welcome back. Log in to continue.</p>
+      <label id="codeRow" hidden><span>Setup code</span><input name="code" autocomplete="off" spellcheck="false"></label>
+      <label><span>Email</span><input name="email" type="email" autocomplete="username" required></label>
+      <label><span>Password</span><input name="password" type="password" autocomplete="current-password" required minlength="1"></label>
+      <button type="submit" id="authBtn" class="primary wide">Log in</button>
+      <p id="authErr" class="err" role="alert"></p>
+    </form>
+  </section>
+
+  <section id="app" hidden>
+    <header class="top">
+      <div class="brand"><span class="mark"></span><span>Offpage Planner</span></div>
+      <div class="site-pick">
+        <select id="site" aria-label="Site"></select>
+        <button id="addSite" class="icon-btn" title="Add a site" aria-label="Add a site">+</button>
+      </div>
+      <div class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="filter" type="search" placeholder="Search this tab…  ( / )" aria-label="Search this tab">
+      </div>
+      <div class="actions">
+        <div class="undo-group">
+          <button id="undoBtn" class="icon-btn" title="Undo (Ctrl+Z)" aria-label="Undo" disabled>↶</button>
+          <button id="redoBtn" class="icon-btn" title="Redo (Ctrl+Y)" aria-label="Redo" disabled>↷</button>
+        </div>
+        <button id="addRow" class="primary">+ Add row</button>
+        <label class="ghost btn" title="Import a CSV into this tab">Import<input id="importFile" type="file" accept=".csv,.tsv,.txt" hidden></label>
+        <button id="exportCsv" class="ghost">Export</button>
+        <div class="user"><button id="userBtn" class="avatar" aria-haspopup="true" title="Account"></button>
+          <div id="userMenu" class="menu" hidden><div id="userEmail" class="menu-head"></div>
+            <button id="usersBtn" hidden>👥 Users &amp; access</button>
+            <button id="pwBtn">🔑 Change password</button>
+            <button id="logout">↪ Log out</button></div></div>
+      </div>
+    </header>
+
+    <div id="toolbar" class="toolbar"></div>
+    <main id="gridWrap"><table id="grid"></table><div id="empty" class="empty" hidden></div></main>
+    <nav id="tabs" class="tabs" aria-label="Tabs"></nav>
+  </section>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <script src="/app.js?v=mvz7ul7u"></script>
+</body>
+</html>
