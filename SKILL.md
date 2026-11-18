@@ -1,6 +1,6 @@
 ---
 name: offpage-plan-with-rehan
-description: Build a complete, safe off-page / link-building plan for one website and deliver it as an Excel workbook (tabs: plan, forum-threads, forum-queries, profiles) plus one CSV per tab in "Desktop/offpage plans/<domain>/". Use when the user asks for an off-page plan, backlink plan, forum backlinks, profile / foundational backlinks, link-building sheet, or "do the offpage like crystallauncher" for a site.
+description: Build a complete, safe off-page / link-building plan for one website and deliver it as an Excel workbook (tabs: plan, forum-threads, forum-queries, profiles) plus one CSV per tab in "Desktop/offpage plans/<domain>/". Use when the user asks for an off-page plan, backlink plan, forum backlinks, profile / foundational backlinks, link-building sheet, or "do the offpage like the last site".
 ---
 
 # Off-page plan
@@ -74,20 +74,42 @@ Note: deploy dialog's email link opens Gmail - tell the user to pick "Me" from t
 
 ## Offpage Planner app (preferred over Google Sheets)
 
-A sheet-style web app on Cloudflare (Worker + D1), code in `planner/` next to this file. Tabs: plan, forum-threads, forum-limits (computed), forum-queries, profiles, competitor-analysis, gp-niche-edits. Built in: max 2 threads per forum (enforced by the server), 15-day yellow wait, YES / WAIT / MAXED, ✓ Posted / ↺ Unpost, undo/redo (Ctrl+Z / Ctrl+Y, buttons, Undo in toasts), users with admin / member roles and per-site access, CSV import (UTF-16 Ahrefs too) / export. Fast: one request loads all tabs of a site, tabs switch from memory, edits are optimistic, last copy paints instantly from localStorage, static files cached with ?v= stamping.
+A sheet-style web app on Cloudflare (Worker + D1), code in `planner/` next to this file. Tabs: plan, forum-threads, forum-limits (computed), forum-accounts, warmup-log, forum-queries, profiles, competitor-analysis, gp-niche-edits. Built in: max 2 threads per forum (enforced by the server), 15-day yellow wait, YES / WAIT / MAXED, ✓ Posted / ↺ Unpost, undo/redo (Ctrl+Z / Ctrl+Y, buttons, Undo in toasts), users with admin / member roles and per-site access, CSV import (UTF-16 Ahrefs too) / export. Forum threads and Profiles end with account columns: Login with (Google / Facebook / … = no username or password needed, shown as "not needed"), Username / email, Password (masked, left out of CSV export and out of every MCP tool: Claude never reads or writes passwords). Fast: one request loads all tabs of a site, tabs switch from memory, edits are optimistic, last copy paints instantly from localStorage, static files cached with ?v= stamping.
 
 **Check first:** if `~/.claude/offpage-planner.json` exists, the user already has a planner (`{url, token}`): use it, don't set up a new one.
 
 **Setup for a new user** (needs Node.js and a free Cloudflare account; run from a copy of `planner/` in the user's project, e.g. `<project>/planner`):
 1. `npm install` then `npx wrangler login` (the user approves in the browser).
 2. `npx wrangler d1 create offpage-planner` and put the printed `database_id` into `wrangler.toml`.
-3. `npx wrangler d1 execute offpage-planner --remote --file schema.sql` (fresh installs only; `migrations/` is for upgrading older installs).
+3. `npx wrangler d1 execute offpage-planner --remote --file schema.sql` (fresh installs only; to upgrade an older install run each new file in `migrations/` the same way, e.g. `002-meta.sql` for the MCP "last used" status).
 4. `npm run deploy` once (creates the Worker; prints the `https://offpage-planner.<account>.workers.dev` address). **Always deploy with `npm run deploy`**, never bare `wrangler deploy`: it stamps `?v=` on app.js / style.css, which browsers cache for a year.
 5. Secrets, generated randomly (Python `secrets`): `npx wrangler secret put SETUP_CODE` (give it to the user once) and `npx wrangler secret put API_TOKEN` (never show it). Save `{"url": "<workers.dev address>", "token": "<API_TOKEN>"}` to `~/.claude/offpage-planner.json`, outside any repo.
 6. The user opens the address, enters the setup code, and creates the first account (it becomes admin). They add teammates in their initial menu -> Users & access.
 7. Push the plan's CSVs: `POST /api/rows {site, tab, rows, mode:"replace"}` with `Authorization: Bearer <token>`. The site appears in the site picker automatically.
 
 API for Claude (bearer token = admin): `GET /api/boot?site=` (all tabs), `GET /api/rows?site=&tab=`, `POST /api/rows` (append/replace; returns ids; `skipped` when a forum already has 2), `PUT` / `DELETE /api/rows/<id>`, `GET/POST /api/sites`, `/api/users` (admin).
+
+**MCP connector** (`POST <url>/mcp`, same bearer token): tools `list_sites`, `get_tab`, `next_threads` (threads postable today, with drafts), `add_rows` (rows as {column: value}), `set_cells` (by column name), `mark_posted`, `warmup_today`, `check_links` (fetches each Post URL and reports live/dead/error — max 20 per call), `delete_row`. Everything runs through the normal API, so the 2-per-forum rule holds. Connect it once, without printing the token: add to `mcpServers` in `~/.claude.json` as `{"type":"http","url":"<url>/mcp","headers":{"Authorization":"Bearer <token>"}}` (read both from `~/.claude/offpage-planner.json`), then restart Claude. For claude.ai or Claude Desktop, the user adds the same URL and header as a custom connector.
+
+## Posting with Claude in Chrome
+
+Claude works in the user's own Chrome, as the user, on real accounts. Every forum goes: **join -> warmup -> links**.
+
+**Tabs:** `forum-accounts` (Forum, Profile URL, Joined, Warmup on/skip, Status, Note, Login with, Username / email, Password) and `warmup-log` (Forum, Date, Type reply/post, Thread, What I wrote, Post URL). A forum with no account row, or one still warming up, shows "Join first" / "Warmup day N/7" and `next_threads` leaves it out.
+
+**1. Join (once per forum).** Read the forum rules first (links in signatures/posts, new-member limits, rules on AI-written posts) and note them in Note. Open the sign-up page and fill the non-secret fields (username, email, profile bio, website field if the forum has one). The user types the password, solves any CAPTCHA, confirms the email, and says yes before Claude clicks Create account (or does it themselves). With "Sign in with Google/Discord/...", the user approves the consent screen. Then `add_rows` forum-accounts with Joined = today, Warmup = "on" (recommended) or "skip" only if the user asks; never a password.
+
+**2. Warmup (recommended, 7 days).** `warmup_today` lists each account's day and what's due:
+- days 1-7: one helpful reply a day to any open question on that forum (any topic the user knows: answer properly, no link);
+- from day 4: at least 2 posts with no link (a new topic or a substantial answer);
+- day 8+, with 7 replies and 2 posts logged -> "Ready for links".
+Pick threads where the user really has something to add. Log every live one: `add_rows` warmup-log {Forum, Type, Thread, What I wrote, Post URL} (links are refused there).
+
+**3. Links.** `next_threads` for the site; at most 3 a day, different forums. Open the thread, check it's open, on topic and links are allowed; else `set_cells` Status = skip with the reason. Rewrite the draft to answer what was actually asked, in the thread's language, useful without the link, one link with the planned anchor, no `[CHECK FIRST ...]` notes, no first-hand claims the user hasn't confirmed.
+
+**Posting (warmup and links):** type the text into the reply box, show the user the exact text and the thread in chat, and click Post only after the user says yes **to that reply** (each post is its own yes; an earlier yes doesn't cover the next one). Then `mark_posted` + `set_cells` Post URL (links) or the warmup-log row (warmup). `check_links` later verifies links are still live.
+
+Stop and hand over to the user on any bot check, ban/moderation notice, or a forum rule against links or AI-written posts. Pace like a person: a few posts a day across forums, never bursts.
 
 Speed depends on where the user is: Cloudflare puts the D1 database near where it was created, and the Worker uses smart placement. Expect ~0.4 s per request plus the user's own network time; the page itself paints instantly from cache.
 Use the Google Sheet route above only if the user asks for a sheet.

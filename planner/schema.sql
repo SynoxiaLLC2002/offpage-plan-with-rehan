@@ -9,3 +9,5 @@ CREATE TABLE IF NOT EXISTS sites (domain TEXT PRIMARY KEY, created INTEGER NOT N
 CREATE TABLE IF NOT EXISTS rows (id INTEGER PRIMARY KEY AUTOINCREMENT, site TEXT NOT NULL, tab TEXT NOT NULL,
   pos REAL NOT NULL, cells TEXT NOT NULL, updated INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS rows_site_tab ON rows (site, tab, pos);
+-- key/value facts about the app itself (e.g. when Claude last used the MCP endpoint)
+CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);

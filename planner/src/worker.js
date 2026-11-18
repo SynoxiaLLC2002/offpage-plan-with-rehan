@@ -1,5 +1,6 @@
 // Offpage Planner API (Cloudflare Worker + D1). The sheet UI is static (public/); everything under /api/* lands here.
 // Auth: a session cookie from /api/login, or "Authorization: Bearer <API_TOKEN>" for Claude/scripts (= admin).
+import { handleMcp } from './mcp.js';
 // Roles: admin sees and manages everything (sites, users); member only opens the sites given to them.
 
 const DAY = 86400, SESSION_DAYS = 30, MAX_PER_FORUM = 2;
@@ -175,6 +176,12 @@ async function api(req, env, path) {
     }
   }
 
+  if (path === '/api/mcp' && method === 'GET') {   // MCP address + when Claude last used it (admins only)
+    if (!me.admin) return bad('Admins only.', 403);
+    const row = await env.DB.prepare("SELECT value FROM meta WHERE key = 'mcp_last'").first().catch(() => null);
+    return json({ url: new URL(req.url).origin + '/mcp', last: row ? JSON.parse(row.value) : null });
+  }
+
   if (path === '/api/sites') {
     if (method === 'GET') {
       const all = (await env.DB.prepare('SELECT domain FROM sites ORDER BY domain').all()).results.map(r => r.domain);
@@ -248,9 +255,25 @@ async function api(req, env, path) {
   return bad('Not found.', 404);
 }
 
+let migrated = false;
+async function migrate(env) {
+  if (migrated) return;
+  const done = await env.DB.prepare("SELECT value FROM meta WHERE key = 'v_post_url'").first().catch(() => null);
+  if (done) { migrated = true; return; }
+  const { results } = await env.DB.prepare("SELECT id, cells FROM rows WHERE tab = 'forum-threads'").all();
+  const stmts = results.map(r => { const c = JSON.parse(r.cells); c.splice(8, 0, ''); return env.DB.prepare('UPDATE rows SET cells = ? WHERE id = ?').bind(JSON.stringify(c), r.id); });
+  stmts.push(env.DB.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('v_post_url', '1')"));
+  for (let i = 0; i < stmts.length; i += 100) await env.DB.batch(stmts.slice(i, i + 100));
+  migrated = true;
+}
+
 export default {
   async fetch(req, env) {
+    await migrate(env).catch(() => {});
     const path = new URL(req.url).pathname;
+    if (path === '/mcp') {
+      try { return await handleMcp(req, env, api); } catch (e) { return bad('Server error: ' + e.message, 500); }
+    }
     if (path.startsWith('/api/')) {
       try { return await api(req, env, path); } catch (e) { return bad('Server error: ' + e.message, 500); }
     }

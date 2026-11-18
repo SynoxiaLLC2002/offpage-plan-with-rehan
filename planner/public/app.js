@@ -3,24 +3,33 @@
 
 // Columns: [name, width, type]. Types: text | url | status | date | long (modal editor) | num | dom (domain with icon) | prio
 const STATUS = ['todo', 'doing', 'done', 'skip'];
+// account columns: a social login needs no username / password
+const LOGINS = ['Google', 'Facebook', 'Discord', 'Microsoft', 'Apple', 'Steam', 'Email + password', 'Username + password'];
+const SOCIAL = /^(google|facebook|discord|microsoft|apple|steam)/i;
 const TABS = {
   'plan': [['Week', 70], ['Area', 120], ['Task', 640], ['Target', 120], ['Owner', 120], ['Status', 110, 'status']],
   'forum-threads': [['Domain', 210, 'dom'], ['Thread', 380, 'url'], ['Anchor', 250], ['Links to', 300, 'url'],
-    ['Priority', 190, 'prio'], ['Status', 110, 'status'], ['Reply draft', 280, 'long'], ['Posted', 120, 'date']],
+    ['Priority', 190, 'prio'], ['Status', 110, 'status'], ['Reply draft', 280, 'long'], ['Posted', 120, 'date'],
+    ['Post URL', 280, 'url'], ['Login with', 150, 'login'], ['Username / email', 220], ['Password', 140, 'secret']],
   'forum-limits': null,   // computed from forum-threads
+  // one row per forum account; Password must stay the last column (left out of MCP)
+  'forum-accounts': [['Forum', 210, 'dom'], ['Profile URL', 260, 'url'], ['Joined', 120, 'date'], ['Warmup', 100, 'warm'], ['Status', 110, 'status'],
+    ['Note', 260], ['Login with', 150, 'login'], ['Username / email', 220], ['Password', 140, 'secret']],
+  'warmup-log': [['Forum', 210, 'dom'], ['Date', 120, 'date'], ['Type', 100, 'wtype'], ['Thread', 380, 'url'], ['What I wrote', 300, 'long'], ['Post URL', 280, 'url']],
   'forum-queries': [['Keyword', 240], ['Searches', 100, 'num'], ['Lang', 70], ['Google search', 480], ['Anchor', 220],
     ['Links to', 300, 'url'], ['Threads found', 280, 'long'], ['Status', 110, 'status']],
   'profiles': [['#', 50], ['Platform', 200], ['Sign-up', 230, 'url'], ['Type', 150], ['Value', 80], ['What to post', 420],
-    ['Links to', 300], ['Status', 110, 'status']],
+    ['Links to', 300], ['Status', 110, 'status'], ['Login with', 150, 'login'], ['Username / email', 220], ['Password', 140, 'secret']],
   'competitor-analysis': [['Competitor', 160], ['Website', 190, 'dom'], ['Thread / page', 360, 'url'], ['Their anchor', 200],
     ['Their target', 260, 'url'], ['My anchor', 220], ['My URL', 300, 'url'], ['Note', 300], ['Status', 110, 'status']],
   'gp-niche-edits': [['Competitor', 160], ['Website', 190, 'dom'], ['Page', 340, 'url'], ['Type', 180], ['DR', 60, 'num'], ['Traffic', 100, 'num'],
     ['Their anchor', 200], ['Their target', 240, 'url'], ['We have it?', 120], ['My anchor', 220], ['My URL', 300, 'url'], ['Note', 260], ['Status', 110, 'status']],
 };
-const LABELS = { 'plan': 'Plan', 'forum-threads': 'Forum threads', 'forum-limits': 'Forum limits', 'forum-queries': 'Search queries',
+const LABELS = { 'plan': 'Plan', 'forum-threads': 'Forum threads', 'forum-limits': 'Forum limits', 'forum-accounts': 'Forum accounts', 'warmup-log': 'Warmup log', 'forum-queries': 'Search queries',
   'profiles': 'Profiles', 'competitor-analysis': 'Competitor threads', 'gp-niche-edits': 'GP & niche edits' };
 const LIMIT_COLS = [['Forum', 260, 'dom'], ['Links posted', 120, 'num'], ['Last posted', 140], ['Next allowed', 140], ['Can post now?', 220, 'can']];
 const MAX_PER_FORUM = 2, WAIT_DAYS = 15;
+const CHOICES = { status: STATUS, warm: ['on', 'skip'], wtype: ['reply', 'post'] };
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids.filter(k => k != null)); return e; };
@@ -81,6 +90,25 @@ const day = (s) => { const t = Date.parse(s); return isNaN(t) ? null : Math.floo
 const today = () => Math.floor(Date.now() / 864e5);
 const iso = (d) => new Date(d * 864e5).toISOString().slice(0, 10);
 const nice = (d) => new Date(d * 864e5).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+// warmup (recommended): days 1-7 one reply a day, from day 4 at least 2 posts without links, then links.
+// shortcut: same rule duplicated in src/mcp.js; keep both in step.
+const WARM_DAYS = 7, WARM_REPLIES = 7, WARM_POSTS = 2;
+function warmup(acct, logs) {
+  if (!acct) return { kind: 'join', label: 'Join first' };
+  if (acct[3] === 'skip') return { kind: 'yes', label: 'Warmup skipped', ready: true };
+  const joined = day(acct[2]);
+  if (joined === null) return { kind: 'join', label: 'Join first' };
+  const n = today() - joined + 1, replies = logs.filter(l => l[2] === 'reply').length;
+  const posts = logs.filter(l => l[2] === 'post' && day(l[1]) >= joined + 3).length;
+  if (n > WARM_DAYS && replies >= WARM_REPLIES && posts >= WARM_POSTS) return { kind: 'yes', label: 'Ready for links', ready: true };
+  return { kind: 'warm', label: `Warmup day ${Math.min(n, WARM_DAYS)}/${WARM_DAYS} · ${replies}/${WARM_REPLIES} replies · ${posts}/${WARM_POSTS} posts` };
+}
+function warmups() {
+  const logs = {}, by = {};
+  for (const r of S.data?.['warmup-log'] || []) (logs[dom(r.cells[0])] ||= []).push(r.cells);
+  for (const r of S.data?.['forum-accounts'] || []) { const d = dom(r.cells[0]); if (d) by[d] = warmup(r.cells, logs[d] || []); }
+  return by;
+}
 function limits(threads) {
   const by = {};
   for (const r of threads) {
@@ -89,14 +117,18 @@ function limits(threads) {
     const p = day(r.cells[7]);
     if (p !== null) { f.posted++; f.last = Math.max(f.last ?? p, p); }
   }
-  for (const f of Object.values(by)) {
+  const W = warmups();
+  for (const [d, f] of Object.entries(by)) {
     f.next = f.last === null ? today() : f.last + WAIT_DAYS;
     f.kind = f.posted >= MAX_PER_FORUM ? 'max' : (f.posted === 0 || today() >= f.next) ? 'yes' : 'wait';
     f.label = f.kind === 'max' ? `Maxed (${MAX_PER_FORUM}/${MAX_PER_FORUM})` : f.kind === 'yes' ? 'Can post' : `Wait · ${nice(f.next)}`;
     f.waiting = f.last !== null && today() < f.last + WAIT_DAYS;
+    const w = W[d] || warmup(null);
+    if (f.posted === 0 && !w.ready) { f.kind = w.kind; f.label = w.label; }   // no link before the account is warmed up (or warmup skipped)
   }
   return by;
 }
+const ORDER = { yes: 0, wait: 1, warm: 1, join: 1, max: 2 };
 const canPill = (kind, label) => el('span', { className: `pill c-${kind}`, textContent: label });
 
 // row state on forum-threads: 'posted' | 'yes' | 'wait' | 'max'
@@ -112,8 +144,9 @@ function shortUrl(u) {
   catch { return [u, '']; }
 }
 function cellView(td, type, value) {
-  td.textContent = ''; td.title = value;
+  td.textContent = ''; td.title = type === 'secret' ? '' : value;   // never show a password on hover
   if (!value) return;
+  if (type === 'secret') return void td.append(el('span', { className: 'muted', textContent: '••••••••', title: 'Click to see or change' }));
   if (type === 'url' && /^https?:\/\//i.test(value)) {
     const [host, path] = shortUrl(value);
     td.append(el('a', { href: value, target: '_blank', rel: 'noopener noreferrer', className: 'lnk' }, path ? el('small', { textContent: host }) : host, path || ''));
@@ -138,6 +171,7 @@ function drawToolbar() {
   bar.append(
     kpi(states.filter(s => s === 'yes').length, 'threads you can post today', 'g'),
     kpi(forums.filter(f => f.kind === 'wait').length, 'forums waiting 15 days', 'a'),
+    kpi(forums.filter(f => f.kind === 'warm' || f.kind === 'join').length, 'forums to join / warming up', 'a'),
     kpi(forums.filter(f => f.kind === 'max').length, 'forums maxed', 'r'),
     kpi(states.filter(s => s === 'posted').length, 'links posted'),
     kpi(forums.length, 'forums in total'));
@@ -151,7 +185,8 @@ function drawToolbar() {
 function render() {
   const isLimits = S.tab === 'forum-limits', cols = TABS[S.tab] || LIMIT_COLS, grid = $('#grid'), q = $('#filter').value.trim().toLowerCase();
   const isThreads = S.tab === 'forum-threads';
-  const extra = isThreads ? [['Can post?', 150]] : [];
+  const isAccts = S.tab === 'forum-accounts', W = isAccts ? warmups() : null;
+  const extra = isThreads ? [['Can post?', 260]] : isAccts ? [['Warmup progress', 320]] : [];
   const actW = isLimits ? 0 : isThreads ? 130 : 44;
   grid.textContent = '';
   const widths = [48, ...cols.map(c => c[1]), ...extra.map(c => c[1]), ...(actW ? [actW] : [])];
@@ -163,12 +198,12 @@ function render() {
 
   if (isLimits) {
     const L = limits(S.threads);
-    Object.keys(L).sort((a, b) => ({ yes: 0, wait: 1, max: 2 }[L[a].kind] - { yes: 0, wait: 1, max: 2 }[L[b].kind]) || a.localeCompare(b)).forEach(d => {
+    Object.keys(L).sort((a, b) => (ORDER[L[a].kind] - ORDER[L[b].kind]) || a.localeCompare(b)).forEach(d => {
       const f = L[d];
       if (q && !d.includes(q)) return;
       const tr = el('tr', {}, el('td', { className: 'num', textContent: ++shown }));
       const tds = [el('td'), el('td', { textContent: `${f.posted} / ${MAX_PER_FORUM}` }), el('td', { textContent: f.last === null ? '—' : nice(f.last) }),
-        el('td', { textContent: f.kind === 'max' ? '—' : f.kind === 'yes' ? 'Now' : nice(f.next) }), el('td')];
+        el('td', { textContent: f.kind === 'wait' ? nice(f.next) : f.kind === 'yes' ? 'Now' : '—' }), el('td')];
       cellView(tds[0], 'dom', d); tds[4].append(canPill(f.kind, f.label));
       tr.append(...tds); body.append(tr);
     });
@@ -177,7 +212,7 @@ function render() {
     S.rows.forEach((r, i) => {
       if (q && !r.cells.join(' ').toLowerCase().includes(q)) return;
       const st = isThreads ? threadState(r, L) : null;
-      if (isThreads && S.view !== 'all' && st !== S.view && !(S.view === 'wait' && st === 'max')) return;
+      if (isThreads && S.view !== 'all' && st !== S.view && !(S.view === 'wait' && st !== 'yes' && st !== 'posted')) return;
       const statusIdx = cols.findIndex(c => c[2] === 'status'), status = r.cells[statusIdx] || '';
       const tr = el('tr', {}, el('td', { className: 'num', textContent: i + 1 }));
       if (status === 'done' || st === 'posted') tr.className = 'done';
@@ -185,6 +220,8 @@ function render() {
       cols.forEach((c, ci) => {
         const td = el('td', { className: 'edit' }), type = c[2] || 'text';
         cellView(td, type, r.cells[ci] ?? '');
+        const li = cols.findIndex(k => k[2] === 'login');
+        if (li >= 0 && ci > li && !r.cells[ci] && SOCIAL.test(r.cells[li] || '')) td.append(el('span', { className: 'muted', textContent: 'not needed' }));
         td.onclick = (e) => { if (!e.target.closest('a')) edit(td, r, ci, type); };
         tr.append(td);
       });
@@ -192,6 +229,7 @@ function render() {
         const f = L[dom(r.cells[0])];
         tr.append(el('td', {}, st === 'posted' ? canPill('posted', 'Posted') : canPill(f?.kind || 'yes', f?.label || 'Can post')));
       }
+      if (isAccts) { const w = W[dom(r.cells[0])] || warmup(r.cells, []); tr.append(el('td', {}, canPill(w.kind, w.label))); }
       const act = el('td', { className: 'act' });
       if (isThreads && st !== 'posted') act.append(el('button', { className: 'mini go', textContent: '✓ Posted', title: 'Mark as posted today', onclick: () => markPosted(r) }));
       if (isThreads && st === 'posted') act.append(el('button', { className: 'mini', textContent: '↺ Unpost', title: 'Not posted after all: clear the date', onclick: () => unpost(r) }));
@@ -245,8 +283,9 @@ function edit(td, r, ci, type) {
   const v = r.cells[ci] ?? '';
   if (type === 'long') return longEditor(r, ci);
   let input;
-  if (type === 'status') { input = el('select', {}, ...STATUS.map(s => el('option', { value: s, textContent: s, selected: s === v }))); input.onchange = () => input.blur(); }
-  else input = el('input', { value: type === 'date' && day(v) !== null ? iso(day(v)) : v, type: type === 'date' ? 'date' : 'text' });
+  if (CHOICES[type]) { input = el('select', {}, ...CHOICES[type].map(s => el('option', { value: s, textContent: s, selected: s === v }))); input.onchange = () => input.blur(); }
+  else if (type === 'login') { input = el('input', { value: v, type: 'text', placeholder: 'Google, Email + password…' }); input.setAttribute('list', 'logins'); }
+  else input = el('input', { autocomplete: 'off', value: type === 'date' && day(v) !== null ? iso(day(v)) : v, type: type === 'date' ? 'date' : 'text' });
   if (type === 'date' && !v) input.value = iso(today());
   td.textContent = ''; td.classList.add('editing'); td.append(input); input.focus();
   if (input.select) input.select();
@@ -318,7 +357,8 @@ async function importCsv(file) {
 }
 function exportCsv() {
   const cols = TABS[S.tab] || LIMIT_COLS;
-  let rows = S.rows.map(r => r.cells);
+  const secret = cols.map(c => c[2] === 'secret');
+  let rows = S.rows.map(r => r.cells.map((v, i) => secret[i] ? '' : v));   // passwords never leave in a CSV
   if (S.tab === 'forum-limits') { const L = limits(S.threads); rows = Object.keys(L).sort().map(d => [d, L[d].posted, L[d].last === null ? '' : iso(L[d].last), iso(L[d].next), L[d].label]); }
   const blob = new Blob(['﻿' + toCsv([cols.map(c => c[0]), ...rows])], { type: 'text/csv' });
   el('a', { href: URL.createObjectURL(blob), download: `${S.site}-${S.tab}.csv` }).click();
@@ -375,7 +415,7 @@ function showApp() {
   const me = S.boot;
   $('#auth').hidden = true; $('#app').hidden = false;
   $('#userBtn').textContent = me.email[0].toUpperCase(); $('#userEmail').textContent = me.email + (me.admin ? ' · admin' : '');
-  S.admin = me.admin; $('#usersBtn').hidden = !me.admin; $('#addSite').hidden = !me.admin;
+  S.admin = me.admin; $('#usersBtn').hidden = !me.admin; $('#mcpBtn').hidden = !me.admin; $('#addSite').hidden = !me.admin;
 }
 async function start() {
   const c = cached(localStorage.site || '');
@@ -411,7 +451,7 @@ $('#addSite').onclick = async () => {
 $('#addRow').onclick = async () => {
   if (!S.site) return toast('Add a site first.', true);
   try {
-    const { site, tab } = S, blank = TABS[S.tab].map(c => c[2] === 'status' ? 'todo' : '');
+    const { site, tab } = S, blank = TABS[S.tab].map(c => c[2] === 'status' ? 'todo' : c[2] === 'warm' ? 'on' : c[2] === 'wtype' ? 'reply' : c[2] === 'date' && S.tab === 'warmup-log' ? iso(today()) : '');
     let id = null;
     await act('add row', async () => { const res = await call('/api/rows', { method: 'POST', body: { site, tab, rows: [blank] } }); id = res.ids[0]; },
       () => delRow(id), 'Row added.');
@@ -502,6 +542,25 @@ function openPassword() {
       try { await call('/api/password', { method: 'POST', body: { current: cur.value, password: nw.value } }); close(); toast('Password changed. Other devices were logged out.'); }
       catch (e) { fail(e); } } })));
 }
+async function openMcp() {
+  $('#userMenu').hidden = true;
+  const { url, last } = await call('/api/mcp');
+  const ago = (t) => { const m = Math.round((Date.now() / 1000 - t) / 60);
+    return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} days ago`; };
+  const status = last ? el('span', { className: 'pill c-yes', textContent: `Last used by Claude ${ago(last.at)}${last.what ? ' · ' + last.what : ''}` })
+    : el('span', { className: 'pill c-wait', textContent: 'Not used by Claude yet' });
+  const addr = el('input', { value: url, readOnly: true, style: 'flex:1;min-width:280px', onclick: (e) => e.target.select() });
+  modal('Claude / MCP', false,
+    el('p', {}, status),
+    el('p', { className: 'section-title', textContent: 'MCP address' }),
+    el('div', { className: 'form-row' }, addr, el('button', { className: 'primary', textContent: 'Copy',
+      onclick: () => navigator.clipboard.writeText(url).then(() => toast('MCP address copied.'), fail) })),
+    el('p', { className: 'muted', textContent: 'Connect it in Claude as an HTTP / custom connector with the header "Authorization: Bearer <API token>". The token is the API_TOKEN secret of this app; it is never shown here.' }),
+    el('p', { className: 'muted', textContent: 'Tools: list_sites, get_tab, next_threads, warmup_today, add_rows, set_cells, mark_posted, check_links, delete_row. The 2-links-per-forum rule and the warmup apply to Claude too.' }));
+}
+$('#mcpBtn').onclick = () => openMcp().catch(fail);
 $('#usersBtn').onclick = () => openUsers().catch(fail);
 $('#pwBtn').onclick = openPassword;
 start().catch(fail);
+
+document.body.append(el('datalist', { id: 'logins' }, ...LOGINS.map(v => el('option', { value: v }))));

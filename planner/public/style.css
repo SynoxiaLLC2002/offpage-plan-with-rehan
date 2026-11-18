@@ -143,3 +143,4 @@ tr:hover td.act .del { visibility: visible; } td.act .del:hover { color: var(--r
 .toast.bad { background: var(--red); }
 @keyframes up { from { opacity: 0; transform: translateY(6px); } }
 @media (max-width: 760px) { .actions { margin-left: 0; } .search { order: 9; max-width: none; flex-basis: 100%; } #gridWrap { margin: 0 8px; } }
+.c-warm { background: var(--amber-soft); color: var(--amber); } .c-join { background: var(--red-soft); color: var(--red); }
